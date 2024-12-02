@@ -52,7 +52,7 @@ const App = () => {
       formData.append('file', file);
 
       const uploadResponse = await axios.post(
-        'https://infosys-springboard-ocr.vercel.app/api/upload',
+        'http://127.0.0.1:5000/api/upload',
         formData,
         {
           headers: {
@@ -65,7 +65,7 @@ const App = () => {
 
       // Step 2: Process the file
       const processResponse = await axios.post(
-        'https://infosys-springboard-ocr.vercel.app/process',
+        'http://127.0.0.1:5000/process',
         {
           file_url: fileUrl,
           crop_params: {
