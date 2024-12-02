@@ -107,7 +107,9 @@ def upload_to_cloudinary(file_path, folder="processed_files"):
         print(f"Error uploading to Cloudinary: {e}")
         raise
 
-
+@app.route("/")
+def home():
+    return jsonify({"message": "Hello from Flask on Vercel!"})
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
