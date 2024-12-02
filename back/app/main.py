@@ -227,11 +227,11 @@ def process_file():
     # (Rest of the code for uploading to Cloudinary and returning the response remains the same)
 
 
-    # Upload processed images to Cloudinary
+   # Upload processed images to Cloudinary
     tesseract_image_urls = [upload_to_cloudinary(os.path.join(tesseract_dir, img), folder=f"processed_files/{unique_id}/tesseract")
                             for img in os.listdir(tesseract_dir)]
     easyocr_image_urls = [upload_to_cloudinary(os.path.join(easyocr_dir, img), folder=f"processed_files/{unique_id}/easyocr")
-                          for img in os.listdir(easyocr_dir)]
+                        for img in os.listdir(easyocr_dir)]
 
     # Save results to CSV
     results_df = pd.DataFrame(results)
@@ -246,8 +246,9 @@ def process_file():
         "results_csv_url": csv_url,
         "tesseract_image_urls": tesseract_image_urls,
         "easyocr_image_urls": easyocr_image_urls,
-        "ocr_results": results
+        "ocr_results": results  # Optionally, limit the OCR results data here
     }), 200
+
 
 @app.route('/api/images', methods=['GET'])
 def get_images():
