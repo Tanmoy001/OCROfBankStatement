@@ -24,10 +24,11 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 cloudinary.config(
-    cloud_name='dtzgf02tl',
-    api_key='967163288576492',
-    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'  
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
+
 
 def is_valid_image(file_path):
     try:
