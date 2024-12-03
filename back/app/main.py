@@ -23,9 +23,9 @@ CORS(app)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 
 cloudinary.config(
-    cloud_name='dtzgf02tl',
-    api_key='967163288576492',
-    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'
+    cloud_name='your_cloud_name',
+    api_key='your_api_key',
+    api_secret='your_api_secret'
 )
 
 def allowed_file(filename):
@@ -47,6 +47,12 @@ def pdf_to_images(pdf_content):
 
 def crop_image(image, upper_percent=0.0, lower_percent=0.0):
     width, height = image.size
+    max_size = 1024  # Adjust as needed
+    if max(width, height) > max_size:
+        ratio = max_size / max(width, height)
+        new_width = int(width * ratio)
+        new_height = int(height * ratio)
+        image = image.resize((new_width, new_height), Image.ANTIALIAS)
     upper_crop = int(height * upper_percent)
     lower_crop = int(height * lower_percent)
     return image.crop((0, upper_crop, width, height - lower_crop))
