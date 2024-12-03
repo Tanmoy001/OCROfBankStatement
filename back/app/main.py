@@ -23,9 +23,9 @@ CORS(app)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 
 cloudinary.config(
-    cloud_name='your_cloud_name',
-    api_key='your_api_key',
-    api_secret='your_api_secret'
+    cloud_name='dtzgf02tl',
+    api_key='967163288576492',
+    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'
 )
 
 def allowed_file(filename):
@@ -147,7 +147,8 @@ def process_file():
                 })
 
         tesseract_image_bytes = BytesIO()
-        cropped_img.save(tesseract_image_bytes, format="PNG")
+        optimized_img = img.resize((img.width // 2, img.height // 2), Image.Resampling.LANCZOS)
+        optimized_img.save(tesseract_image_bytes, format="PNG", quality=85)
         tesseract_image_bytes.seek(0)
         tesseract_url = upload_to_cloudinary(tesseract_image_bytes, folder=f"processed_files/{unique_id}/tesseract")
 
