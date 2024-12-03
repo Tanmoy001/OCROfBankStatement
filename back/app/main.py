@@ -104,7 +104,7 @@ def process_file():
     data = request.json
     file_url = data.get("file_url")
     crop_params = data.get("crop_params", {"upper_percent": 0.0, "lower_percent": 0.0})
-    max_cropped_images = data.get("max_cropped_images", 10)
+    # max_cropped_images = data.get("max_cropped_images", 10)
     tesseract_params = data.get("tesseract_params", {"psm": 3, "oem": 3})
     easyocr_params = data.get("easyocr_params", {"languages": ["en"], "gpu": True})
 
@@ -118,7 +118,7 @@ def process_file():
 
     # Process file
     if file_url.endswith(".pdf"):
-        image_paths = pdf_to_images(file_content)[:max_cropped_images]
+        image_paths = pdf_to_images(file_content)
     else:
         image_paths = [Image.open(file_content)]
 
