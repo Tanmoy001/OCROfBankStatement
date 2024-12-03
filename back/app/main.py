@@ -59,17 +59,10 @@ def crop_image(image, upper_percent=0.0, lower_percent=0.0):
 
 def upload_to_cloudinary(file_obj, folder):
     try:
-        # Create a fake file name for the BytesIO object
-        file_name = "file.png"  # You can customize this to be dynamic based on your needs
-
-        # Upload the file to Cloudinary
+        file_name = "file.png"  # Customize this if needed
         response = cloudinary.uploader.upload(file_obj, folder=folder, public_id=file_name, resource_type="auto")
-
-        # Check for errors in the response
         if response.get("error"):
             raise Exception(response["error"]["message"])
-
-        # Return the URL of the uploaded file
         return response.get("secure_url")
     except Exception as e:
         print(f"Error uploading to Cloudinary: {e}")
@@ -85,7 +78,6 @@ def upload_file():
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
-
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
@@ -104,7 +96,6 @@ def process_file():
     data = request.json
     file_url = data.get("file_url")
     crop_params = data.get("crop_params", {"upper_percent": 0.0, "lower_percent": 0.0})
-    # max_cropped_images = data.get("max_cropped_images", 10)
     tesseract_params = data.get("tesseract_params", {"psm": 3, "oem": 3})
     easyocr_params = data.get("easyocr_params", {"languages": ["en"], "gpu": True})
 
@@ -118,7 +109,7 @@ def process_file():
 
     # Process file
     if file_url.endswith(".pdf"):
-        image_paths = pdf_to_images(file_content)
+        image_paths = pdf_to_images (file_content)
     else:
         image_paths = [Image.open(file_content)]
 
@@ -132,13 +123,9 @@ def process_file():
         for i, text in enumerate(tesseract_data["text"]):
             if text.strip():
                 x, y, w, h = (tesseract_data["left"][i], tesseract_data["top"][i],
-                                  tesseract_data["width"][i], tesseract_data["height"][i])
-
-                # Ensure the coordinates are valid (y1 must be >= y0, x1 must be >= x0)
+                              tesseract_data["width"][i], tesseract_data["height"][i])
                 x1 = x + w
                 y1 = y + h
-
-                # Draw rectangle if the coordinates are valid
                 tesseract_draw.rectangle([x, y, x1, y1], outline="red", width=2)
                 results.append({
                     "Recognized Text": text.strip(),
@@ -147,7 +134,7 @@ def process_file():
                 })
 
         tesseract_image_bytes = BytesIO()
-        optimized_img = img.resize((img.width // 2, img.height // 2), Image.Resampling.LANCZOS)
+        optimized_img = cropped_img.resize((cropped_img.width // 2, cropped_img.height // 2), Image.Resampling.LANCZOS)
         optimized_img.save(tesseract_image_bytes, format="PNG", quality=85)
         tesseract_image_bytes.seek(0)
         tesseract_url = upload_to_cloudinary(tesseract_image_bytes, folder=f"processed_files/{unique_id}/tesseract")
@@ -174,19 +161,22 @@ def process_file():
         easyocr_image_bytes.seek(0)
         easyocr_url = upload_to_cloudinary(easyocr_image_bytes, folder=f"processed_files/{unique_id}/easyocr")
 
-        # Save results to CSV in memory
-        results_df = pd.DataFrame(results)
-        results_csv_bytes = BytesIO()
-        results_df.to_csv(results_csv_bytes, index=False)
-        results_csv_bytes.seek(0)
-        csv_url = upload_to_cloudinary(results_csv_bytes, folder=f"processed_files/{unique_id}/csv_file")
+    # Save results to CSV in memory
+    results_df = pd.DataFrame(results)
+    results_csv_bytes = BytesIO()
+    results_df.to_csv(results_csv_bytes, index=False)
+    results_csv_bytes.seek(0)
+    csv_url = upload_to_cloudinary(results_csv_bytes, folder=f"processed_files/{unique_id}/csv_file")
+
+    # Limit the number of results returned
+    summary_results = results[:10]  # Return only the first 10 results
 
     return jsonify({
         "message": "Processing complete",
         "results_csv_url": csv_url,
         "tesseract_image_urls": [tesseract_url],
         "easyocr_image_urls": [easyocr_url],
-        "ocr_results": results
+        "ocr_results": summary_results
     }), 200
 
 if __name__ == "__main__":
