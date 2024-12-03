@@ -25,7 +25,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 cloudinary.config(
     cloud_name='dtzgf02tl',
     api_key='967163288576492',
-    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'  
+    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'
 )
 
 def allowed_file(filename):
@@ -55,20 +55,19 @@ def upload_to_cloudinary(file_obj, folder):
     try:
         # Create a fake file name for the BytesIO object
         file_name = "file.png"  # You can customize this to be dynamic based on your needs
-        
+
         # Upload the file to Cloudinary
         response = cloudinary.uploader.upload(file_obj, folder=folder, public_id=file_name, resource_type="auto")
-        
+
         # Check for errors in the response
         if response.get("error"):
             raise Exception(response["error"]["message"])
-        
+
         # Return the URL of the uploaded file
         return response.get("secure_url")
     except Exception as e:
         print(f"Error uploading to Cloudinary: {e}")
         raise
-
 
 @app.route('/')
 def home():
@@ -127,7 +126,7 @@ def process_file():
         for i, text in enumerate(tesseract_data["text"]):
             if text.strip():
                 x, y, w, h = (tesseract_data["left"][i], tesseract_data["top"][i],
-                            tesseract_data["width"][i], tesseract_data["height"][i])
+                                  tesseract_data["width"][i], tesseract_data["height"][i])
 
                 # Ensure the coordinates are valid (y1 must be >= y0, x1 must be >= x0)
                 x1 = x + w
@@ -182,8 +181,6 @@ def process_file():
         "easyocr_image_urls": [easyocr_url],
         "ocr_results": results
     }), 200
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
