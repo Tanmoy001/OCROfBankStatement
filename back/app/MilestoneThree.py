@@ -18,9 +18,11 @@ import shutil
 import matplotlib
 matplotlib.use('Agg')  # Non-GUI backend for matplotlib
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests from the React frontend
+load_dotenv()
 
 # Initialize EasyOCR Reader
 reader = easyocr.Reader(['en'], gpu=True)
@@ -28,15 +30,15 @@ reader = easyocr.Reader(['en'], gpu=True)
 # Initialize LLM
 llm = ChatGroq(
     temperature=0,
-    groq_api_key="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",
+    groq_api_key=os.getenv('GROQ_API_KEY'),
     model_name="llama-3.1-70b-versatile"
 )
 
-# Configure Cloudinary
+# Configure Cloudinary using environment variables
 cloudinary.config(
-    cloud_name='dtzgf02tl',
-    api_key='967163288576492',
-    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'  
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
 # Define cropping limits
@@ -103,18 +105,6 @@ def upload_to_cloudinary(file_data, file_name, folder_path):
         print(f"Error uploading to Cloudinary: {e}")
         return None
 
-# def save_directory_to_cloudinary(directory_path, cloudinary_folder):
-#     """Upload all files in a directory to Cloudinary."""
-#     uploaded_files = []
-#     for root, _, files in os.walk(directory_path):
-#         for file in files:
-#             local_path = os.path.join(root, file)
-#             relative_path = os.path.relpath(local_path, directory_path)
-#             cloudinary_path = os.path.join(cloudinary_folder, relative_path).replace('\\', '/')
-#             url = upload_to_cloudinary(local_path, cloudinary_path)
-#             if url:
-#                 uploaded_files.append(url)
-#     return uploaded_files
 
 def get_prompt_for_document(input_type, ocr_text):
     """Generate a document-specific prompt for the LLM based on the input type."""
@@ -156,75 +146,6 @@ def process_user_request(input_paths, input_type):
     extracted_data = {os.path.basename(img): extract_data_with_llm(text, input_type) for img, text in ocr_results}
     return extracted_data
 
-# def visualize_attribute_wise_pie_charts(data):
-#     """Visualize each attribute (column) comparison using pie charts."""
-#     try:
-#         # Parse data into rows
-#         rows = []
-
-#         # Extract data for each image and attribute
-#         for image, attributes in data.items():
-#             if isinstance(attributes, str):
-#                 parsed_attributes = {}
-#                 matches = re.findall(r"(\d+\.\s*[A-Za-z\s]+):\s*([^\n]+)", attributes)
-#                 for match in matches:
-#                     key = match[0].strip()
-#                     value = match[1].strip()
-#                     parsed_attributes[key] = value
-                
-#                 row = {"Image": image}
-#                 row.update(parsed_attributes)
-#                 rows.append(row)
-#             elif isinstance(attributes, dict):
-#                 row = {"Image": image}
-#                 row.update(attributes)
-#                 rows.append(row)
-
-#         # Convert rows to a DataFrame
-#         df = pd.DataFrame(rows)
-#         print(tabulate(df, headers="keys", tablefmt="grid"))
-
-#         # Directory to save pie charts
-#         pie_chart_dir = "pie_charts"
-#         os.makedirs(pie_chart_dir, exist_ok=True)
-
-#         # Generate pie charts for each column (attribute)
-#         pie_chart_urls = []
-#         for attribute in df.columns:
-#             if attribute == "Image":  # Skip Image column
-#                 continue
-
-#             numerical_data = {}
-#             for _, row in df.iterrows():
-#                 if attribute in row and pd.notnull(row[attribute]):
-#                     # Extract numeric value from the string if possible
-#                     match = re.search(r"\d+(?:,\d+)*", str(row[attribute]))
-#                     if match:
-#                         num_value = int(match.group().replace(",", ""))
-#                         numerical_data[row["Image"]] = num_value
-
-#             # Plot pie chart for this attribute/column
-#             if numerical_data:
-#                 plt.figure(figsize=(6, 6))
-#                 plt.pie(
-#                     numerical_data.values(),
-#                     labels=numerical_data.keys(),
-#                     autopct="%1.1f%%",
-#                     startangle=90,
-#                     colors=plt.cm.Paired.colors
-#                 )
-#                 plt.title(f"{attribute} Comparison Across Images")
-#                 pie_chart_path = os.path.join(pie_chart_dir, f"{attribute}_comparison.png")
-#                 plt.savefig(pie_chart_path)
-#                 plt.close()
-
-#                 pie_chart_urls.append(pie_chart_path)
-
-#         return pie_chart_urls
-
-#     except Exception as e:
-#         print(f"Error visualizing data: {e}")
-#         return []
 def generate_bar_charts(data, cloudinary_folder):
     """Generate bar charts for attributes and upload them to Cloudinary."""
     try:

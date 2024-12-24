@@ -16,23 +16,25 @@ from langchain_groq import ChatGroq
 import cloudinary
 from cloudinary import uploader, api
 import io
+from dotenv import load_dotenv
 
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
 
 # Initialize the LLM
 llm = ChatGroq(
     temperature=0,
-    groq_api_key="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",
+    groq_api_key=os.getenv('GROQ_API_KEY'),
     model_name="llama-3.1-70b-versatile"
 )
 
-# Configure Cloudinary
+# Configure Cloudinary using environment variables
 cloudinary.config(
-    cloud_name='dtzgf02tl',
-    api_key='967163288576492',
-    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
 # Initialize EasyOCR Reader
