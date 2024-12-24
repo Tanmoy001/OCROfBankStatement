@@ -1,4 +1,4 @@
-# Financial Document Automation System
+# OCR of bank statement 
 ### A system to automate the management of financial documents by fetching, processing, and storing them efficiently using OCR and cloud-based technologies.
 
 ## Features
