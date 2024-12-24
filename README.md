@@ -1,5 +1,5 @@
-#Financial Document Automation System
-##A system to automate the management of financial documents by fetching, processing, and storing them efficiently using OCR and cloud-based technologies.
+**OCR of back statement ~ Infosys Springboard**
+**A system to automate the management of financial documents by fetching, processing, and storing them efficiently using OCR and cloud-based technologies.**
 
 Features
 Milestone 1: Fetching and Image Quality
