@@ -1,6 +1,70 @@
 .App {
   text-align: center;
 }
+
+
+.home {
+  text-align: center;
+  padding: 20px;
+}
+
+.milestone-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.milestone-box {
+  width: 100%;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.milestone-box h3 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.milestone-box p {
+  font-size: 1rem;
+  color: #666;
+}
+
+.milestone-box:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+}
+
+nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+nav ul li {
+  display: inline;
+  margin: 10px;
+  
+}
+
+nav ul li a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #007BFF;
+}
+
+nav ul li a:hover {
+  text-decoration: underline;
+}
+a{
+  text-decoration: none;
+}
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -115,9 +179,10 @@ header .overlay {
 }
 
 h1 {
-  font-family: "Dancing Script", cursive;
+  font-family: "Dancing Script";
   font-size: 60px;
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
+  margin: 3%;
 }
 
 h3,
@@ -147,7 +212,7 @@ button:hover {
 }
 
 input[type="file"] {
-  display: none; /* Hide the original file input */
+  display: none; 
 }
 
 .custom-file-label {
@@ -164,3 +229,6 @@ input[type="file"] {
 .custom-file-label:hover {
   background: linear-gradient(135deg, #9f05ff69 10%, #fd5e086b 100%);
 }
+
+
+
