@@ -16,6 +16,7 @@ function Milestonefine() {
         num_images: numImages,
         input_type: inputType,
       });
+      console.log(response)
       setExtractedData(response.data);
     } catch (error) {
       console.error("Error processing images:", error);

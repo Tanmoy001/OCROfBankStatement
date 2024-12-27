@@ -16,25 +16,23 @@ from langchain_groq import ChatGroq
 import cloudinary
 from cloudinary import uploader, api
 import io
-from dotenv import load_dotenv
 
 # Initialize Flask app and configure CORS
 app = Flask(__name__)
 CORS(app)
-load_dotenv()
 
 # Initialize the LLM
 llm = ChatGroq(
     temperature=0,
-    groq_api_key=os.getenv('GROQ_API_KEY'),
+    groq_api_key="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",
     model_name="llama-3.1-70b-versatile"
 )
 
-# Configure Cloudinary using environment variables
+# Configure Cloudinary
 cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    cloud_name='dtzgf02tl',
+    api_key='967163288576492',
+    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'
 )
 
 # Initialize EasyOCR Reader
@@ -144,11 +142,17 @@ def process_images_with_easyocr(image_paths):
 def get_prompt_for_document(input_type, ocr_text):
     """Generate a document-specific prompt for the LLM based on the input type."""
     prompts = {
-        "salary slip": "Extract the following from the salary slip : gross salary, house rent allowances, conveyance allowances, net salary, basic amount. Text: {{ocr_text}}",
-        "balance slip": "Extract the following from the balance slip: account holder name, account number, balance, date, bank name. Text: {{ocr_text}}",
-        "cash slip": "Extract the following from the cash slip: transaction date, amount, transaction ID, bank/ATM ID. Text: {{ocr_text}}"
+        "salary slip": ("Extract only the numerical values from the salary slip for the following attributes: Gross Salary, House Rent Allowance, Conveyance Allowance, Net Salary, Basic Amount. Ignore any additional text or symbols. Text: {{ocr_text}} "
+                        "For example: Gross Salary: 252125"
+            "Provide values without currency symbols or commas."),
+        "balance slip": "Extract only the numerical values from the balance slip for the following attributes: Account Holder Name, Account Number, Balance, Date, Bank Name. Ignore any additional text or symbols. Text: {{ocr_text}}",
+        "cash slip": "Extract only the numerical values from the cash slip for the following attributes: Transaction Date, Amount, Transaction ID, Bank/ATM ID. Ignore any additional text or symbols. Text: {{ocr_text}}"
     }
     return prompts[input_type].replace("{{ocr_text}}", ocr_text)
+
+def clean_text(text):
+    """Remove unnecessary formatting like '**' from text."""
+    return re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Remove Markdown-style bold (**text**)
 
 def extract_data_with_llm(ocr_text, input_type):
     try:
@@ -156,52 +160,28 @@ def extract_data_with_llm(ocr_text, input_type):
         prompt = PromptTemplate(input_variables=["ocr_text"], template=prompt_text)
         result = prompt | llm
         response = result.invoke({"ocr_text": ocr_text})
-        return response.content
+        cleaned_response = clean_text(response.content)
+        return cleaned_response
     except Exception as e:
         print(f"Error interacting with LLM: {e}")
         return {"error": str(e)}
 
-def upload_to_cloudinary(file_data, file_name, folder_path):
-    """Upload file data to Cloudinary in the specified folder."""
+def upload_to_cloudinary(buffer, file_name, folder_path):
+    """Upload a file-like buffer to Cloudinary."""
     try:
+        buffer.seek(0)  # Ensure buffer is at the start
         response = cloudinary.uploader.upload(
-            file_data,
+            buffer,
             folder=folder_path,
             public_id=file_name,
-            resource_type="image"
+            resource_type="image"  # Specify resource type explicitly
         )
         return response.get('secure_url')
     except Exception as e:
-        print(f"Error uploading to Cloudinary: {e}")
+        print(f"Error uploading to Cloudinary for {file_name}: {e}")
         return None
 
-import pandas as pd
 
-def visualize_attribute_wise_table(data):
-    """Generate a table for extracted data and display it."""
-    try:
-        rows = []
-        for image, attributes in data.items():
-            row = {"Image": image}
-            if isinstance(attributes, dict):
-                row.update(attributes)
-            elif isinstance(attributes, str):
-                # Process the extracted text (you may need to parse it here)
-                matches = re.findall(r"(\d+\.\s*[A-Za-z\s]+):\s*([^\n]+)", attributes)
-                for key, value in matches:
-                    row[key.strip()] = value.strip()
-            rows.append(row)
-
-        # Create a DataFrame to format the extracted data into a table
-        df = pd.DataFrame(rows)
-
-        # Display the table
-        print(df.to_string(index=False))  # You can also render this in a web interface if needed
-
-        return df
-    except Exception as e:
-        print(f"Error generating table: {e}")
-        return None
         
 def generate_bar_charts(data, cloudinary_folder):
     """Generate bar charts for attributes and upload them to Cloudinary."""
@@ -256,7 +236,6 @@ def generate_bar_charts(data, cloudinary_folder):
         return []
     
 def generate_pie_charts(data, cloudinary_folder):
-    """Generate pie charts for attributes and upload them to Cloudinary."""
     try:
         rows = []
         for image, attributes in data.items():
@@ -294,13 +273,11 @@ def generate_pie_charts(data, cloudinary_folder):
                 )
                 plt.title(f"{column} Comparison")
                 
-                # Save chart to a BytesIO object
                 chart_buffer = io.BytesIO()
                 plt.savefig(chart_buffer, format="png")
-                plt.close()  # Avoid Tkinter-related issues
+                plt.close()
+                chart_buffer.seek(0)  # Rewind the buffer
 
-                # Upload chart to Cloudinary
-                chart_buffer.seek(0)
                 cloudinary_url = upload_to_cloudinary(chart_buffer, f"{column}_comparison", f"{cloudinary_folder}/pie_charts")
                 if cloudinary_url:
                     pie_chart_urls.append(cloudinary_url)
@@ -309,6 +286,7 @@ def generate_pie_charts(data, cloudinary_folder):
     except Exception as e:
         print(f"Error generating pie charts: {e}")
         return []
+
 
 
 @app.route('/process', methods=['POST'])
@@ -331,5 +309,5 @@ def process_request():
                     "bar_chart_files": bar_chart_urls})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

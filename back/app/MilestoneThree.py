@@ -18,11 +18,9 @@ import shutil
 import matplotlib
 matplotlib.use('Agg')  # Non-GUI backend for matplotlib
 import matplotlib.pyplot as plt
-from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests from the React frontend
-load_dotenv()
 
 # Initialize EasyOCR Reader
 reader = easyocr.Reader(['en'], gpu=True)
@@ -30,15 +28,15 @@ reader = easyocr.Reader(['en'], gpu=True)
 # Initialize LLM
 llm = ChatGroq(
     temperature=0,
-    groq_api_key=os.getenv('GROQ_API_KEY'),
+    groq_api_key="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",
     model_name="llama-3.1-70b-versatile"
 )
 
-# Configure Cloudinary using environment variables
+# Configure Cloudinary
 cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    cloud_name='dtzgf02tl',
+    api_key='967163288576492',
+    api_secret='4r_cghe2qp0RSWFdjFkToZ5kIko'  
 )
 
 # Define cropping limits
@@ -109,11 +107,19 @@ def upload_to_cloudinary(file_data, file_name, folder_path):
 def get_prompt_for_document(input_type, ocr_text):
     """Generate a document-specific prompt for the LLM based on the input type."""
     prompts = {
-        "salary slip": "Extract the following from the salary slip : gross salary, house rent allowances, conveyance allowances, net salary, basic amount. Text: {{ocr_text}}",
+        "salary slip": ("Extract only the numerical values from the salary slip for the following attributes: Gross Salary, House Rent Allowance, Conveyance Allowance, Net Salary, Basic Amount. Ignore any additional text or symbols. Text: {{ocr_text}} "
+                        "For example: Gross Salary: 252125"
+            "Provide values without currency symbols or commas."),
         "balance slip": "Extract the following from the balance slip: account holder name, account number, balance, date, bank name. Text: {{ocr_text}}",
         "cash slip": "Extract the following from the cash slip: transaction date, amount, transaction ID, bank/ATM ID. Text: {{ocr_text}}"
     }
     return prompts[input_type].replace("{{ocr_text}}", ocr_text)
+
+import re
+
+def clean_text(text):
+    """Remove unnecessary formatting like '**' from text."""
+    return re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Remove Markdown-style bold (**text**)
 
 def extract_data_with_llm(ocr_text, input_type):
     try:
@@ -121,10 +127,12 @@ def extract_data_with_llm(ocr_text, input_type):
         prompt = PromptTemplate(input_variables=["ocr_text"], template=prompt_text)
         result = prompt | llm
         response = result.invoke({"ocr_text": ocr_text})
-        return response.content
+        cleaned_response = clean_text(response.content)
+        return cleaned_response
     except Exception as e:
         print(f"Error interacting with LLM: {e}")
         return {"error": str(e)}
+
 
 def process_user_request(input_paths, input_type):
     """Process user input (image, PDF, or folder) and extract specific data."""
@@ -170,12 +178,13 @@ def generate_bar_charts(data, cloudinary_folder):
             numerical_data = {}
             for _, row in df.iterrows():
                 if pd.notnull(row[column]):
-                    match = re.search(r"\d+", str(row[column]))
-                    if match:
-                        numerical_data[row["Image"]] = int(match.group())
+                    try:
+                        value = float(re.search(r"\d+(\.\d+)?", str(row[column])).group())
+                        numerical_data[row["Image"]] = value
+                    except AttributeError:
+                        print(f"Could not extract numerical data from column '{column}' for image '{row['Image']}'.")
 
             if numerical_data:
-                # Create a bar chart
                 plt.figure(figsize=(10, 6))
                 plt.bar(numerical_data.keys(), numerical_data.values(), color='skyblue')
                 plt.xlabel('Images')
@@ -185,7 +194,7 @@ def generate_bar_charts(data, cloudinary_folder):
                 # Save chart to a BytesIO object
                 chart_buffer = io.BytesIO()
                 plt.savefig(chart_buffer, format="png")
-                plt.close()  # Avoid Tkinter-related issues
+                plt.close()
 
                 # Upload chart to Cloudinary
                 chart_buffer.seek(0)
@@ -197,6 +206,7 @@ def generate_bar_charts(data, cloudinary_folder):
     except Exception as e:
         print(f"Error generating bar charts: {e}")
         return []
+
     
 
 def generate_pie_charts(data, cloudinary_folder):
@@ -223,9 +233,11 @@ def generate_pie_charts(data, cloudinary_folder):
             numerical_data = {}
             for _, row in df.iterrows():
                 if pd.notnull(row[column]):
-                    match = re.search(r"\d+", str(row[column]))
-                    if match:
-                        numerical_data[row["Image"]] = int(match.group())
+                    try:
+                        value = float(re.search(r"\d+(\.\d+)?", str(row[column])).group())
+                        numerical_data[row["Image"]] = value
+                    except AttributeError:
+                        print(f"Could not extract numerical data from column '{column}' for image '{row['Image']}'.")
 
             if numerical_data:
                 plt.figure(figsize=(6, 6))
@@ -236,16 +248,16 @@ def generate_pie_charts(data, cloudinary_folder):
                     startangle=90,
                     colors=plt.cm.Paired.colors
                 )
-                plt.title(f"{column} Comparison")
-                
+                plt.title(f"{column} Distribution")
+
                 # Save chart to a BytesIO object
                 chart_buffer = io.BytesIO()
                 plt.savefig(chart_buffer, format="png")
-                plt.close()  # Avoid Tkinter-related issues
+                plt.close()
 
                 # Upload chart to Cloudinary
                 chart_buffer.seek(0)
-                cloudinary_url = upload_to_cloudinary(chart_buffer, f"{column}_comparison", f"{cloudinary_folder}/pie_charts")
+                cloudinary_url = upload_to_cloudinary(chart_buffer, f"{column}_distribution", f"{cloudinary_folder}/pie_charts")
                 if cloudinary_url:
                     pie_chart_urls.append(cloudinary_url)
 
@@ -253,6 +265,7 @@ def generate_pie_charts(data, cloudinary_folder):
     except Exception as e:
         print(f"Error generating pie charts: {e}")
         return []
+
 
 @app.route('/process', methods=['POST'])
 def process_files():
@@ -262,6 +275,7 @@ def process_files():
 
         # Generate a unique folder name for this upload
         unique_folder = f"milestonetwo/{uuid4().hex}"
+        ensure_directory(unique_folder)  # Ensure the unique folder exists
 
         # Temporary directories for uploads and pie charts
         upload_dir = "uploads"
@@ -298,6 +312,7 @@ def process_files():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.2", port=5001)
