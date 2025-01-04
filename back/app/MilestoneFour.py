@@ -6,6 +6,9 @@ from pdf2image import convert_from_path
 from PIL import Image
 import os
 import requests
+from io import BytesIO
+from PIL import Image
+import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')  # Non-GUI backend for matplotlib
@@ -122,10 +125,7 @@ def convert_pdf_to_images(pdf_path, output_folder):
         print(f"Error converting {pdf_path} to images: {e}")
         return []
 
-from io import BytesIO
-from PIL import Image
-import easyocr
-import numpy as np
+
 
 def process_images_with_easyocr(image_urls):
     reader = easyocr.Reader(['en'])  # Initialize EasyOCR reader
