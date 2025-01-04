@@ -11,7 +11,7 @@ function Milestonefine() {
   const handleProcess = async () => {
     setLoading(true);
     try {
-      const response = await axios.post("https://backend-5v46u7jb8-tanmoy001s-projects.vercel.app/process", {
+      const response = await axios.post("http://localhost:5000/process", {
         folder_name: inputType,
         num_images: numImages,
         input_type: inputType,
