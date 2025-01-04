@@ -122,22 +122,30 @@ def convert_pdf_to_images(pdf_path, output_folder):
         print(f"Error converting {pdf_path} to images: {e}")
         return []
 
+from io import BytesIO
+from PIL import Image
+import easyocr
+import numpy as np
 
-def process_images_with_easyocr(image_paths):
-    text_list = []
-    for image_path in image_paths:
-        try:
-            if CROP_LIMITS:
-                cropped_path = os.path.join(os.path.dirname(image_path), f"cropped_{os.path.basename(image_path)}")
-                crop_percent(image_path, cropped_path, CROP_LIMITS.get("upper_percent"), CROP_LIMITS.get("lower_percent"))
-                image_path = cropped_path
-            ocr_results = reader.readtext(image_path)
-            recognized_text = " ".join([text for _, text, _ in ocr_results])
-            text_list.append((image_path, recognized_text))
-        except Exception as e:
-            print(f"Error processing {image_path}: {e}")
-    return text_list
+def process_images_with_easyocr(image_urls):
+    reader = easyocr.Reader(['en'])  # Initialize EasyOCR reader
+    ocr_results = {}
 
+    for url in image_urls:
+        # Fetch image as a binary stream
+        response = requests.get(url)
+        if response.status_code == 200:
+            image = Image.open(BytesIO(response.content))
+            
+            # Convert PIL Image to numpy array
+            image_np = np.array(image)
+
+            # Perform OCR directly on the numpy array
+            result = reader.readtext(image_np, detail=0)
+            ocr_results[url] = " ".join(result)
+        else:
+            ocr_results[url] = None
+    return ocr_results
 
 def get_prompt_for_document(input_type, ocr_text):
     """Generate a document-specific prompt for the LLM based on the input type."""
@@ -295,12 +303,22 @@ def process_request():
     folder_name = data.get("folder_name")
     num_images = data.get("num_images")
     input_type = data.get("input_type")
-    temp_folder = "./temp_images"
+    # temp_folder = "./temp_images"
+
+
+
+    # Fetch image URLs from Cloudinary
+    image_urls = fetch_cloudinary_images(folder_name, num_images)
 
     image_urls = fetch_cloudinary_images(folder_name, num_images)
-    local_paths = download_images_from_cloudinary(image_urls, temp_folder)
-    ocr_results = process_images_with_easyocr(local_paths)
-    extracted_data = {os.path.basename(img): extract_data_with_llm(text, input_type) for img, text in ocr_results}
+    # local_paths = download_images_from_cloudinary(image_urls, temp_folder)
+    ocr_results = process_images_with_easyocr(image_urls)
+    # Extract data with LLM
+    extracted_data = {
+        os.path.basename(url): extract_data_with_llm(text, input_type)
+        for url, text in ocr_results.items() if text
+    }
+
     unique_folder = f"milestonetwo/{uuid4().hex}"
     pie_chart_urls = generate_pie_charts(extracted_data,unique_folder)
     bar_chart_urls = generate_bar_charts(extracted_data,unique_folder)
